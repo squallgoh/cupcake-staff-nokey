@@ -1,0 +1,40 @@
+{
+  "identityPoolName": "cupcakestaffeFAKE_USER_ID_identitypool_eFAKE_USER_ID",
+  "allowUnauthenticatedIdentities": false,
+  "resourceNameTruncated": "cupcakeFAKE_USER_ID",
+  "userPoolName": "cupcakestaffeFAKE_USER_ID_userpool_eFAKE_USER_ID",
+  "autoVerifiedAttributes": ["email"],
+  "mfaConfiguration": "OFF",
+  "mfaTypes": ["SMS Text Message"],
+  "smsAuthenticationMessage": "Your authentication code is {####}",
+  "smsVerificationMessage": "Your verification code is {####}",
+  "emailVerificationSubject": "Your verification code",
+  "emailVerificationMessage": "Your verification code is {####}",
+  "defaultPasswordPolicy": false,
+  "passwordPolicyMinLength": 8,
+  "passwordPolicyCharacters": [],
+  "requiredAttributes": ["email"],
+  "userpoolClientGenerateSecret": true,
+  "userpoolClientRefreshTokenValidity": 30,
+  "userpoolClientWriteAttributes": ["email"],
+  "userpoolClientReadAttributes": ["email"],
+  "userpoolClientLambdaRole": "cupcakeFAKE_USER_ID_userpoolclient_lambda_role",
+  "userpoolClientSetAttributes": false,
+  "resourceName": "cupcakestaffeFAKE_USER_ID",
+  "authSelections": "identityPoolAndUserPool",
+  "authRoleArn": {
+    "Fn::GetAtt": ["AuthRole", "Arn"]
+  },
+  "unauthRoleArn": {
+    "Fn::GetAtt": ["UnauthRole", "Arn"]
+  },
+  "useDefault": "default",
+  "usernameAttributes": ["email"],
+  "triggers": "{}",
+  "userPoolGroupList": [],
+  "parentStack": {
+    "Ref": "AWS::StackId"
+  },
+  "permissions": [],
+  "dependsOn": []
+}

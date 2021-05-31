@@ -1,0 +1,8 @@
+{
+  "AppSyncApiName": "CupcakeAPI",
+  "DynamoDBBillingMode": "PAY_PER_REQUEST",
+  "DynamoDBEnableServerSideEncryption": "false",
+  "AuthCognitoUserPoolId": {
+    "Fn::GetAtt": ["authcupcakestaffedFAKE_USER_ID", "Outputs.UserPoolId"]
+  }
+}

@@ -1,0 +1,781 @@
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Container,
+  Button,
+  Header,
+  Form,
+  Modal,
+  Icon,
+  List,
+  Table,
+  Segment,
+} from "semantic-ui-react";
+import DatePicker from "react-datepicker";
+import {
+  ENGLISH_SUBJECT_ID,
+  VOCAB_MCQ_TOPIC_ID,
+  QT_VOCAB_MCQ_ID,
+  Data_Entry_Staff,
+} from "./../_config";
+import { API, graphqlOperation } from "aws-amplify";
+import {
+  getSubject,
+  createEnglishMCQQuestion,
+  listQuestionsByQuestionTypeByCreatedAt,
+  updateQuestion,
+  deleteQuestion,
+} from "./_graphql";
+import Previewer from "../Previewer";
+import _ from "lodash";
+
+import "react-datepicker/dist/react-datepicker.css";
+
+const VocabularyMCQ = () => {
+  const [activeItem, setActiveItem] = useState("");
+  const [subject, setSubject] = useState({});
+  const createManageMap = {
+    create: <CreateVocabMCQ subject={subject} />,
+    manage: <ManageVocabMCQ subject={subject} />,
+  };
+
+  const handleItemClick = (e, { name }) => {
+    setActiveItem(name);
+  };
+  const fetchSubject = async () => {
+    const { data } = await API.graphql(
+      graphqlOperation(getSubject, { id: ENGLISH_SUBJECT_ID })
+    );
+    setSubject(data.getSubject);
+  };
+  useEffect(() => {
+    fetchSubject();
+  }, []);
+
+  const renderCreateManage = () => {
+    return (
+      <Container textAlign="center">
+        <Button
+          onClick={handleItemClick}
+          name="create"
+          toggle
+          active={activeItem === "create"}
+        >
+          Create New Question
+        </Button>
+        <Button
+          onClick={handleItemClick}
+          name="manage"
+          toggle
+          active={activeItem === "manage"}
+        >
+          Manage Questions
+        </Button>
+      </Container>
+    );
+  };
+
+  return (
+    <Container>
+      <Header>Vocabulary MCQ</Header>
+      {renderCreateManage()}
+      <Container>{createManageMap[activeItem]}</Container>
+    </Container>
+  );
+};
+
+export default VocabularyMCQ;
+
+const CreateVocabMCQ = (props) => {
+  const { subject } = props;
+  const levelOptions = subject.levels.items
+    .map((item) => {
+      const { id, name, num } = item.level;
+      return {
+        key: id,
+        value: id,
+        text: name,
+        num,
+      };
+    })
+    .sort((a, b) => a.num - b.num);
+  const [levelID, setLevelID] = useState("");
+  const renderSelectLevel = () => {
+    return (
+      <Form.Select
+        label="Level"
+        placeholder="Select Level"
+        options={levelOptions}
+        value={levelID}
+        onChange={(e, { value }) => setLevelID(value)}
+      />
+    );
+  };
+
+  const [questionText, setQuestionText] = useState("");
+  const renderQuestionTextInput = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          type="text"
+          label="Question Text"
+          value={questionText}
+          onChange={(e) => setQuestionText(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [answer, setAnswer] = useState("");
+  const renderAnswerInput = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          type="text"
+          label="Answer"
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [wo1, setWO1] = useState("");
+  const renderWO1Input = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          type="text"
+          label="Wrong Option 1"
+          value={wo1}
+          onChange={(e) => setWO1(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [wo2, setWO2] = useState("");
+  const renderWO2Input = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          type="text"
+          label="Wrong Option 2"
+          value={wo2}
+          onChange={(e) => setWO2(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [wo3, setWO3] = useState("");
+  const renderWO3Input = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          type="text"
+          label="Wrong Option 3"
+          value={wo3}
+          onChange={(e) => setWO3(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [newlyCreatedQuestion, setNewlyCreatedQuestion] = useState({});
+  const renderQuestionCreatedModal = () => {
+    if (Object.keys(newlyCreatedQuestion).length > 0) {
+      return (
+        <Modal
+          basic
+          trigger=""
+          size="small"
+          open={Object.keys(newlyCreatedQuestion).length > 0}
+          onClose={() => newlyCreatedQuestion({})}
+        >
+          <Header icon="check" content="Question Successfully Created" />
+          <Modal.Content>
+            <p>Question Text: {newlyCreatedQuestion.questionText}</p>
+            <p>Answer: {newlyCreatedQuestion.answer}</p>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button
+              color="green"
+              inverted
+              type="button"
+              onClick={() => setNewlyCreatedQuestion({})}
+            >
+              <Icon name="thumbs up outline" /> Got it!
+            </Button>
+          </Modal.Actions>
+        </Modal>
+      );
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const question = {
+      topicID: VOCAB_MCQ_TOPIC_ID,
+      questionTypeID: QT_VOCAB_MCQ_ID,
+      subjectID: ENGLISH_SUBJECT_ID,
+      levelID,
+      questionText,
+      answer,
+      wrongOptions: JSON.stringify({ wo1, wo2, wo3 }),
+      marks: 1,
+      expectedTime: 2,
+      vetted: false,
+    };
+
+    try {
+      const data = await API.graphql(
+        graphqlOperation(createEnglishMCQQuestion, {
+          input: {
+            ...question,
+          },
+        })
+      );
+      setNewlyCreatedQuestion({ ...data.data.createQuestion });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const renderForm = () => {
+    return (
+      <Form onSubmit={handleSubmit}>
+        {renderSelectLevel()}
+        {renderQuestionTextInput()}
+        {renderAnswerInput()}
+        {renderWO1Input()}
+        {renderWO2Input()}
+        {renderWO3Input()}
+        <Button primary type="submit">
+          Submit
+        </Button>
+        <Button secondary type="button" onClick={() => setPreviewing("iphone")}>
+          Preview (iPhone X)
+        </Button>
+        <Button negative type="button" onClick={handleClearForm}>
+          Clear Form
+        </Button>
+      </Form>
+    );
+  };
+
+  const handleClearForm = () => {
+    setLevelID("");
+    setQuestionText("");
+    setAnswer("");
+    setWO1("");
+    setWO2("");
+    setWO3("");
+  };
+
+  const [previewing, setPreviewing] = useState("");
+  const renderPreview = () => {
+    const options = { answer, wo1, wo2, wo3 };
+    const renderedOptions = _.shuffle(Object.keys(options)).map((key) => {
+      return (
+        <Container
+          key={key}
+          style={{ paddingTop: "5px", paddingBottom: "5px" }}
+        >
+          <Button>{options[key]}</Button>
+        </Container>
+      );
+    });
+    const content = (
+      <Container>
+        <Header as="h3">Question #</Header>
+        <Container textAlign="left">{questionText}</Container>
+        <Container style={{ paddingTop: "15px" }}>{renderedOptions}</Container>
+        <Container
+          textAlign="center"
+          style={{ paddingTop: "15px", paddingBottom: "15px" }}
+        >
+          <Button.Group>
+            <Button floated="left">Previous Question</Button>
+            <Button floated="right">Next Question</Button>
+          </Button.Group>
+        </Container>
+      </Container>
+    );
+    if (previewing === "iphone") {
+      const contentx = () => {
+        return <>{content}</>;
+      };
+      return <Previewer Component={contentx} />;
+    }
+  };
+
+  return (
+    <Container>
+      {renderForm()}
+      {renderPreview()}
+      {renderQuestionCreatedModal()}
+    </Container>
+  );
+};
+
+const ManageVocabMCQ = (props) => {
+  const { subject } = props;
+  const levelOptions = subject.levels.items
+    .map((item) => {
+      const { id, name, num } = item.level;
+      return {
+        key: id,
+        value: id,
+        text: name,
+        num,
+      };
+    })
+    .sort((a, b) => a.num - b.num);
+  const staffOptions = Data_Entry_Staff.sort((a, b) => a.num - b.num);
+  const [staffID, setStaffID] = useState("");
+  const renderSelectStaff = () => {
+    return (
+      <Form>
+        <Form.Select
+          fluid
+          placeholder="Select Staff"
+          options={staffOptions}
+          value={staffID}
+          onChange={(e, { value }) => setStaffID(value)}
+        />
+      </Form>
+    );
+  };
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const renderSelectDates = () => {
+    return (
+      <Container>
+        <Container textAlign="center" fluid>
+          <Header as="h3">Select Start Date:</Header>
+          <DatePicker
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            showTimeSelect
+          />
+          <Header as="h3">Select End Date:</Header>
+          <DatePicker
+            selected={endDate}
+            onChange={(date) => setEndDate(date)}
+            showTimeSelect
+          />
+        </Container>
+      </Container>
+    );
+  };
+  const [questionList, setQuestionList] = useState([]);
+  const fetchQuestions = useCallback(() => {
+    const fetchQuestionsFromDB = async (startDate, endDate) => {
+      try {
+        const data = await API.graphql(
+          graphqlOperation(listQuestionsByQuestionTypeByCreatedAt, {
+            questionTypeID: QT_VOCAB_MCQ_ID,
+            createdAt: {
+              between: [startDate.toISOString(), endDate.toISOString()],
+            },
+            filter: { owner: { eq: staffID } },
+            limit: 16384,
+          })
+        );
+        setQuestionList(data.data.listQuestionsByQuestionTypeByCreatedAt.items);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchQuestionsFromDB(startDate, endDate);
+  }, [endDate, startDate, staffID]);
+
+  useEffect(() => {
+    if (endDate - startDate > 0 && staffID) {
+      fetchQuestions(startDate, endDate);
+    }
+  }, [fetchQuestions, startDate, endDate, staffID]);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState("");
+  const handleEditModalClose = () => {
+    setIsEditModalOpen("");
+  };
+  const handleEditModalOpen = (id) => {
+    setIsEditModalOpen(id);
+  };
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState("");
+  const handleDeleteModalClose = () => {
+    setIsDeleteModalOpen("");
+  };
+  const handleDeleteModalOpen = (id) => {
+    setIsDeleteModalOpen(id);
+  };
+  const [newlyDeletedQuestion, setNewlyDeletedQuestion] = useState({});
+  const renderQuestionDeletedModal = () => {
+    if (Object.keys(newlyDeletedQuestion).length > 0) {
+      return (
+        <Modal
+          basic
+          trigger=""
+          size="small"
+          open={Object.keys(newlyDeletedQuestion).length > 0}
+          onClose={() => newlyDeletedQuestion({})}
+        >
+          <Header icon="check" content="Question Successfully Deleted" />
+          <Modal.Content>
+            <p>Question Text: {newlyDeletedQuestion.questionText}</p>
+          </Modal.Content>
+          <Modal.Actions>
+            <Button
+              color="green"
+              inverted
+              type="button"
+              onClick={() => setNewlyDeletedQuestion({})}
+            >
+              <Icon name="thumbs up outline" /> Got it!
+            </Button>
+          </Modal.Actions>
+        </Modal>
+      );
+    }
+  };
+
+  const renderQuestion = (question) => {
+    const { id, questionText, answer } = question;
+    const wrongOptions = JSON.parse(question.wrongOptions);
+    const renderedWOs = Object.keys(wrongOptions).map((wo) => {
+      return <List.Item key={wo}>{wrongOptions[wo]}</List.Item>;
+    });
+    return (
+      <Table.Row key={id}>
+        <Table.Cell>{id}</Table.Cell>
+        <Table.Cell>{questionText}</Table.Cell>
+        <Table.Cell>{answer}</Table.Cell>
+        <Table.Cell>
+          <List bulleted>{renderedWOs}</List>
+        </Table.Cell>
+        <Table.Cell>
+          <Button.Group>
+            <EditQuestionModal
+              question={question}
+              levelOptions={levelOptions}
+              handleEditModalClose={handleEditModalClose}
+              handleEditModalOpen={handleEditModalOpen}
+              fetchQuestions={fetchQuestions}
+              isEditModalOpen={isEditModalOpen}
+            />
+            <DeleteQuestionModal
+              question={question}
+              handleDeleteModalClose={handleDeleteModalClose}
+              handleDeleteModalOpen={handleDeleteModalOpen}
+              fetchQuestions={fetchQuestions}
+              isDeleteModalOpen={isDeleteModalOpen}
+              setNewlyDeletedQuestion={setNewlyDeletedQuestion}
+            />
+          </Button.Group>
+        </Table.Cell>
+      </Table.Row>
+    );
+  };
+
+  const renderQuestions = () => {
+    if (questionList.length > 0) {
+      console.log("Questions:", questionList);
+      const questionsBody = questionList.map((question) => {
+        return renderQuestion(question);
+      });
+      return (
+        <Table>
+          <Table.Header>
+            <Table.Row>
+              <Table.Cell width={3}>ID</Table.Cell>
+              <Table.Cell>Question Text</Table.Cell>
+              <Table.Cell>Answer</Table.Cell>
+              <Table.Cell>Other Options</Table.Cell>
+              <Table.Cell>Actions</Table.Cell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>{questionsBody}</Table.Body>
+        </Table>
+      );
+    }
+  };
+
+  return (
+    <Container style={{ paddingTop: "30px" }}>
+      {renderSelectStaff()}
+      {renderSelectDates()}
+      {renderQuestions()}
+      {renderQuestionDeletedModal()}
+    </Container>
+  );
+};
+
+const EditQuestionModal = (props) => {
+  const {
+    question,
+    levelOptions,
+    handleEditModalClose,
+    handleEditModalOpen,
+    fetchQuestions,
+    isEditModalOpen,
+  } = props;
+  const {
+    id,
+    levelID,
+    subjectID,
+    topicID,
+    questionText,
+    answer,
+    questionTypeID,
+    wrongOptions: rawWOs,
+  } = question;
+  const INITIAL_QUESTION = {
+    id,
+    levelID,
+    subjectID,
+    topicID,
+    questionTypeID,
+    questionText,
+    answer,
+    wrongOptions: rawWOs,
+  };
+  const wrongOptions = JSON.parse(rawWOs);
+  const [newLevelID, setNewLevelID] = useState(levelID);
+  const renderSelectLevel = () => {
+    return (
+      <Form.Select
+        label="Select Level:"
+        inline
+        placeholder="Select Level"
+        options={levelOptions}
+        value={newLevelID}
+        onChange={(e, { value }) => setNewLevelID(value)}
+      />
+    );
+  };
+
+  const [newQuestionText, setNewQuestionText] = useState(questionText);
+  const renderQuestionTextInput = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          label="Question Text"
+          value={newQuestionText}
+          type="text"
+          onChange={(e) => setNewQuestionText(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [newAnswer, setNewAnswer] = useState(answer);
+  const renderAnswerInput = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          label="Answer"
+          value={newAnswer}
+          type="text"
+          onChange={(e) => setNewAnswer(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [wo1, setWo1] = useState(wrongOptions["wo1"]);
+  const renderWO1Input = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          label="Wrong Option 1"
+          value={wo1}
+          type="text"
+          onChange={(e) => setWo1(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [wo2, setWo2] = useState(wrongOptions["wo2"]);
+  const renderWO2Input = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          label="Wrong Option 2"
+          value={wo2}
+          type="text"
+          onChange={(e) => setWo2(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const [wo3, setWo3] = useState(wrongOptions["wo3"]);
+  const renderWO3Input = () => {
+    return (
+      <Form.Field>
+        <Form.Input
+          label="Wrong Option 3"
+          value={wo3}
+          type="text"
+          onChange={(e) => setWo3(e.target.value)}
+        />
+      </Form.Field>
+    );
+  };
+
+  const handleEditSubmit = async () => {
+    const updatedQuestion = {
+      id,
+      levelID: newLevelID,
+      subjectID,
+      topicID,
+      questionTypeID,
+      questionText: newQuestionText,
+      answer: newAnswer,
+      wrongOptions: JSON.stringify({ wo1, wo2, wo3 }),
+    };
+    if (_.isEqual(updatedQuestion, INITIAL_QUESTION)) {
+      return;
+    }
+    try {
+      await API.graphql(
+        graphqlOperation(updateQuestion, {
+          input: {
+            ...updatedQuestion,
+          },
+        })
+      );
+      fetchQuestions(newLevelID);
+      handleEditModalClose();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  return (
+    <Modal
+      trigger={
+        <Button type="button" primary onClick={() => handleEditModalOpen(id)}>
+          <Icon name="edit" />
+          Edit
+        </Button>
+      }
+      open={isEditModalOpen === id}
+      onClose={handleEditModalClose}
+      centered={false}
+    >
+      <Header>Edit Question</Header>
+      <Modal.Content>
+        <Form onSubmit={handleEditSubmit}>
+          {renderSelectLevel()}
+          {renderQuestionTextInput()}
+          {renderAnswerInput()}
+          {renderWO1Input()}
+          {renderWO2Input()}
+          {renderWO3Input()}
+          <Button.Group fluid>
+            <Button type="submit" positive>
+              <Icon name="checkmark" />
+              Submit
+            </Button>
+            <Button type="button" onClick={handleEditModalClose} negative>
+              <Icon name="cancel" /> Cancel
+            </Button>
+          </Button.Group>
+        </Form>
+      </Modal.Content>
+    </Modal>
+  );
+};
+
+const DeleteQuestionModal = (props) => {
+  const {
+    question,
+    handleDeleteModalClose,
+    handleDeleteModalOpen,
+    fetchQuestions,
+    isDeleteModalOpen,
+    setNewlyDeletedQuestion,
+  } = props;
+  const { id, questionText, answer } = question;
+  const wrongOptions = JSON.parse(question.wrongOptions);
+  const renderedOptions = Object.keys(wrongOptions).map((key) => {
+    return <List.Item key={key}>{wrongOptions[key]}</List.Item>;
+  });
+
+  const handleDeleteQuestion = async () => {
+    try {
+      const { data } = await API.graphql(
+        graphqlOperation(deleteQuestion, { input: { id } })
+      );
+      console.log("deleted data", data);
+      setNewlyDeletedQuestion({ ...data.deleteQuestion });
+      fetchQuestions(data.deleteQuestion.levelID);
+      handleDeleteModalClose();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  return (
+    <>
+      <Modal
+        trigger={
+          <Button
+            type="button"
+            negative
+            onClick={() => handleDeleteModalOpen(id)}
+          >
+            <Icon name="delete" />
+            Delete
+          </Button>
+        }
+        open={isDeleteModalOpen === id}
+        onClose={handleDeleteModalClose}
+        centered={false}
+      >
+        <Header>Are you sure you want to delete this question?</Header>
+        <Modal.Content>
+          <Segment>
+            <Table celled>
+              <Table.Header>
+                <Table.Row>
+                  <Table.Cell>ID</Table.Cell>
+                  <Table.Cell>{id}</Table.Cell>
+                </Table.Row>
+              </Table.Header>
+              <Table.Body>
+                <Table.Row>
+                  <Table.Cell>Question Text</Table.Cell>
+                  <Table.Cell>{questionText}</Table.Cell>
+                </Table.Row>
+                <Table.Row>
+                  <Table.Cell>Answer</Table.Cell>
+                  <Table.Cell>{answer}</Table.Cell>
+                </Table.Row>
+                <Table.Row>
+                  <Table.Cell>Other Options</Table.Cell>
+                  <Table.Cell>
+                    <List bulleted>{renderedOptions}</List>
+                  </Table.Cell>
+                </Table.Row>
+              </Table.Body>
+            </Table>
+          </Segment>
+        </Modal.Content>
+        <Modal.Actions>
+          <Button.Group fluid>
+            <Button negative type="button" onClick={handleDeleteQuestion}>
+              <Icon name="delete" />
+              Delete
+            </Button>
+            <Button secondary type="button" onClick={handleDeleteModalClose}>
+              <Icon name="cancel" />
+              Cancel
+            </Button>
+          </Button.Group>
+        </Modal.Actions>
+      </Modal>
+    </>
+  );
+};

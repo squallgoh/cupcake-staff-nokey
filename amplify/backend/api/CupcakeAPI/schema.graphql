@@ -1,0 +1,237 @@
+type Level
+  @model
+  @auth(
+    rules: [
+      {
+        allow: groups
+        groups: ["staff"]
+        queries: null
+        mutations: [create, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  num: Int
+  subjects: [LevelSubject] @connection(keyName: "byLevel", fields: ["id"])
+}
+
+type LevelSubject
+  @model(queries: null)
+  @key(name: "byLevel", fields: ["levelID", "subjectID"])
+  @key(name: "bySubject", fields: ["subjectID", "levelID"]) {
+  id: ID!
+  levelID: ID!
+  subjectID: ID!
+  level: Level! @connection(fields: ["levelID"])
+  subject: Subject! @connection(fields: ["subjectID"])
+}
+
+type Subject
+  @model
+  @auth(
+    rules: [
+      {
+        allow: groups
+        groups: ["staff"]
+        queries: null
+        mutations: [create, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  longName: String!
+  levels: [LevelSubject] @connection(keyName: "bySubject", fields: ["id"])
+  topics: [Topic] @connection(keyName: "bySubject", fields: ["id"])
+  skillGroups: [SkillGroup] @connection(keyName: "bySubject", fields: ["id"])
+  questionTypes: [QuestionType]
+    @connection(keyName: "bySubject", fields: ["id"])
+  questions: [Question] @connection(keyName: "bySubject", fields: ["id"])
+}
+
+type Topic
+  @model
+  @key(name: "bySubject", fields: ["subjectID", "name"])
+  @auth(
+    rules: [
+      # Allows all Staff to CRUD 'Level'
+      {
+        allow: groups
+        groups: ["staff"]
+        queries: null
+        mutations: [create, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  subjectID: ID!
+  num: Int
+  subject: Subject @connection(fields: ["subjectID"])
+  questions: [Question] @connection(keyName: "byTopic", fields: ["id"])
+}
+
+type QuestionType
+  @model
+  @key(name: "bySubject", fields: ["subjectID", "name"])
+  @auth(
+    rules: [
+      # Allows all Staff to CRUD 'Level'
+      {
+        allow: groups
+        groups: ["staff"]
+        queries: null
+        mutations: [create, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  subjectID: ID!
+  subject: Subject @connection(fields: ["subjectID"])
+  questions: [Question] @connection(keyName: "byQuestionType", fields: ["id"])
+}
+
+type Question
+  @model
+  @key(name: "byTopic", fields: ["topicID"])
+  @key(name: "bySubSkill", fields: ["subSkillID"])
+  @key(name: "bySubject", fields: ["subjectID"])
+  @key(name: "byLevel", fields: ["levelID"])
+  @key(name: "byQuestionType", fields: ["questionTypeID"])
+  @key(
+    name: "byTopicByQuestionType"
+    fields: ["topicID", "questionTypeID"]
+    queryField: "listQuestionsByTopicAndQuestionType"
+  )
+  @key(
+    name: "byTopicByQuestionTypeByLevel"
+    fields: ["topicID", "questionTypeID", "levelID"]
+    queryField: "listQuestionsByTopicByQuestionTypeByLevel"
+  )
+  @key(
+    name: "byQuestionTypeByLevel"
+    fields: ["questionTypeID", "levelID"]
+    queryField: "listQuestionsByQuestionTypeAndLevel"
+  )
+  @key(
+    name: "byQuestionTypeByCreatedAt"
+    fields: ["questionTypeID", "createdAt"]
+    queryField: "listQuestionsByQuestionTypeByCreatedAt"
+  )
+  @key(
+    name: "byeQuestionTypeBySubSkill"
+    fields: ["questionTypeID", "subSkillID"]
+    queryField: "listQuestionsByQuestionTypeBySubSkillID"
+  )
+  @auth(
+    rules: [
+      {
+        allow: owner
+        ownerField: "owner"
+        operations: [create, update, delete, read]
+      }
+      { allow: groups, groups: ["staff"] }
+      { allow: groups, groups: ["assistant"] }
+    ]
+  ) {
+  # Metadata for all questions
+  id: ID!
+  topicID: ID!
+  topic: Topic @connection(fields: ["topicID"])
+  subSkillID: ID!
+  subSkill: SubSkill @connection(fields: ["subSkillID"])
+  subjectID: ID!
+  subject: Subject @connection(fields: ["subjectID"])
+  levelID: ID!
+  level: Level @connection(fields: ["levelID"])
+  questionTypeID: ID!
+  questionType: QuestionType @connection(fields: ["questionTypeID"])
+  # Generic Attributes for Questions
+  questionText: String
+  answer: String
+  explanation: String
+  wrongOptions: String
+  marks: Int
+  expectedTime: Int
+  marksPerSubQn: Int
+  subQuestions: String
+  # subQnOptions: String #JSON.stringify array of JSON.stringify arrays
+  # subQnTexts: String #JSON.stringify array of strings
+  # subQnAnswers: String #JSON.stringify array of strings
+  # subQnMarks: String #JSON.stringify array of int.toString()
+  isMultiPart: Boolean
+  answerClozeTexts: String #JSON.stringify array of strings
+  vetted: Boolean
+  owner: String
+  createdAt: String
+  updatedAt: String
+}
+
+type SkillGroup
+  @model
+  @key(name: "bySubject", fields: ["subjectID", "name"])
+  @auth(
+    rules: [
+      # Allows all Staff to CRUD 'SkillGroup'
+      {
+        allow: groups
+        groups: ["staff"]
+        queries: null
+        mutations: [create, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  subjectID: ID!
+  subject: Subject @connection(fields: ["subjectID"])
+  skills: [Skill] @connection(keyName: "bySkillGroup", fields: ["id"])
+}
+
+type Skill
+  @model
+  @key(name: "bySkillGroup", fields: ["skillGroupID", "name"])
+  @auth(
+    rules: [
+      # Allows all Staff to CRUD 'SkillGroup'
+      {
+        allow: groups
+        groups: ["staff"]
+        queries: null
+        mutations: [create, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  skillGroupID: ID!
+  skillGroup: SkillGroup @connection(fields: ["skillGroupID"])
+  subSkills: [SubSkill] @connection(keyName: "bySkill", fields: ["id"])
+}
+
+type SubSkill
+  @model
+  @key(
+    name: "bySkill"
+    fields: ["skillID", "name"]
+    queryField: "listSubSkillBySkill"
+  )
+  @auth(
+    rules: [
+      # Allows all Staff to CRUD 'SkillGroup'
+      {
+        allow: groups
+        groups: ["staff"]
+        queries: null
+        mutations: [create, update, delete]
+      }
+    ]
+  ) {
+  id: ID!
+  name: String!
+  skillID: ID!
+  skill: Skill @connection(fields: ["skillID"])
+  questions: [Question] @connection(keyName: "bySubSkill", fields: ["id"])
+}

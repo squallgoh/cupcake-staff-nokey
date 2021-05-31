@@ -1,0 +1,32 @@
+{
+  "auth": {
+    "cupcakestaffed49cc1d": {
+      "service": "Cognito",
+      "providerPlugin": "awscloudformation",
+      "dependsOn": []
+    }
+  },
+  "api": {
+    "CupcakeAPI": {
+      "service": "AppSync",
+      "providerPlugin": "awscloudformation",
+      "output": {
+        "authConfig": {
+          "additionalAuthenticationProviders": [],
+          "defaultAuthentication": {
+            "authenticationType": "AMAZON_COGNITO_USER_POOLS",
+            "userPoolConfig": {
+              "userPoolId": "FAKE_USER_POOL_ID"
+            }
+          }
+        }
+      }
+    }
+  },
+  "storage": {
+    "questionsImages": {
+      "service": "S3",
+      "providerPlugin": "awscloudformation"
+    }
+  }
+}

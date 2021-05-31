@@ -1,0 +1,38 @@
+{
+  "prod": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-cupcakestaff-FAKEID-authRole",
+      "UnauthRoleArn": "arn:aws:iam::FAKE_ACCOUNTID:role/amplify-cupcakestaff-FAKEID-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::FAKE_ACCOUNTID:role/amplify-cupcakestaff-FAKEID-authRole",
+      "Region": "ap-southeast-1",
+      "DeploymentBucketName": "amplify-cupcakestaff-FAKEID-deployment",
+      "UnauthRoleName": "amplify-cupcakestaff-FAKEID-unauthRole",
+      "StackName": "amplify-cupcakestaff-FAKEID",
+      "StackId": "arn:aws:cloudformation:ap-southeast-1:FAKE_ACCOUNTID:stack/amplify-cupcakestaff-FAKEID/FAKE_SALT",
+      "AmplifyAppId": "FAKE_ID"
+    },
+    "categories": {
+      "auth": {
+        "FAKE_USER_ID": {}
+      }
+    }
+  },
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-cupcakestaff-FAKE_APP_ID-authRole",
+      "UnauthRoleArn": "arn:aws:iam::FAKE_ACCOUNTID:role/amplify-cupcakestaff-FAKE_APP_ID-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::FAKE_ACCOUNTID:role/amplify-cupcakestaff-FAKE_APP_ID-authRole",
+      "Region": "ap-southeast-1",
+      "DeploymentBucketName": "amplify-cupcakestaff-FAKE_APP_ID-deployment",
+      "UnauthRoleName": "amplify-cupcakestaff-FAKE_APP_ID-unauthRole",
+      "StackName": "amplify-cupcakestaff-FAKE_APP_ID",
+      "StackId": "arn:aws:cloudformation:ap-southeast-1:FAKE_ACCOUNTID:stack/amplify-cupcakestaff-FAKE_APP_ID/f9d03790-8ace-11ea-8c7b-06abab1199f8",
+      "AmplifyAppId": "FAKE_ID"
+    },
+    "categories": {
+      "auth": {
+        "FAKE_USER_ID": {}
+      }
+    }
+  }
+}
