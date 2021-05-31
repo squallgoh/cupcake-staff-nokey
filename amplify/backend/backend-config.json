@@ -1,6 +1,6 @@
 {
   "auth": {
-    "cupcakestaffed49cc1d": {
+    "cupcakestaffedFAKEID": {
       "service": "Cognito",
       "providerPlugin": "awscloudformation",
       "dependsOn": []
